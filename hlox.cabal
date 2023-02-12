@@ -14,6 +14,16 @@ extra-source-files:
     CHANGELOG.md
     README.md
 
+library
+    hs-source-dirs: src
+    exposed-modules:
+        Hlox.Lex
+    build-depends:
+        base ^>=4.16.4.0,
+        megaparsec ^>=9.3.0,
+        text 
+    default-language: Haskell2010
+
 executable hlox
     main-is:          Main.hs
 
@@ -29,7 +39,16 @@ executable hlox
 test-suite test-hlox
     type: exitcode-stdio-1.0
     main-is: Spec.hs
-    build-depends:    base ^>=4.16.4.0, hspec
+    other-modules:
+        Hlox.LexSpec
+    build-depends:
+        hlox,
+        base ^>=4.16.4.0,
+        hspec ^>=2.10.9,
+        megaparsec ^>=9.3.0,
+        file-embed,
+        text,
+        bytestring
     hs-source-dirs:   test
     default-language: Haskell2010
     build-tool-depends: hspec-discover:hspec-discover
