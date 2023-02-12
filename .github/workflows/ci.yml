@@ -1,0 +1,24 @@
+name: ci
+
+on: [push]
+
+env:
+  ghc_version: "9.2.5"
+  cabal_version: "3.6.2.0"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: ${{ env.ghc_version }}
+          cabal-version: ${{ env.cabal_version }}
+      - name: Cache ~/.cabal
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-ghc-${{ env.ghc_version }}-cabal-${{ env.cabal_version }}-${{ hashFiles('hlox.cabal') }}
+          path: |
+            ~/.cabal
+      - run: cabal test
