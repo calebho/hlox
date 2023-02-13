@@ -2,12 +2,12 @@
 
 module Hlox.Lex (Token (..), Number (..), tokens) where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (Alternative (some), (<|>))
 import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (MonadParsec (eof), Parsec, choice, many, manyTill, try)
-import Text.Megaparsec.Char (char, space1, string)
+import Text.Megaparsec.Char (char, letterChar, space1, string)
 import qualified Text.Megaparsec.Char.Lexer as L
 import Prelude hiding (print)
 
@@ -138,6 +138,15 @@ and = lexeme (string "and") $> And
 or :: Parser Token
 or = lexeme (string "or") $> Or
 
+var :: Parser Token
+var = lexeme (string "var") $> Var
+
+identifier :: Parser Token
+identifier = Identifier <$> lexeme (some (letterChar <|> char '_'))
+
+equal :: Parser Token
+equal = symbol "=" $> Equal
+
 token :: Parser Token
 token =
   choice
@@ -154,13 +163,16 @@ token =
       greaterEqual,
       greater,
       equalEqual,
+      equal,
       bangEqual,
       bang,
       Hlox.Lex.and,
       Hlox.Lex.or,
+      var,
       true,
       false,
-      nil
+      nil,
+      identifier
     ]
 
 tokens :: Parser [Token]
