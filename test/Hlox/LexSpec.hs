@@ -262,3 +262,41 @@ spec =
       let result = ParseResult $ runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
+
+    it "lexes variables.lox" $ do
+      let src = $(makeRelativeToProject "test/data/variables.lox" >>= embedStringFile) :: T.Text
+      let expected =
+            [ Var,
+              Identifier "imAVariable",
+              Equal,
+              String "here is my value",
+              Semicolon,
+              Var,
+              Identifier "im_another_variable",
+              Equal,
+              String "here is my value",
+              Semicolon,
+              Var,
+              Identifier "iAmNil",
+              Semicolon,
+              --
+              Var,
+              Identifier "breakfast",
+              Equal,
+              String "bagels",
+              Semicolon,
+              Print,
+              Identifier "breakfast",
+              Semicolon,
+              Identifier "breakfast",
+              Equal,
+              String "beignets",
+              Semicolon,
+              Print,
+              Identifier "breakfast",
+              Semicolon
+            ]
+
+      let result = ParseResult $ runParser tokens "" src
+
+      result `shouldBe` ParseResult (Right expected)
