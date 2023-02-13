@@ -1,5 +1,8 @@
 var imAVariable = "here is my value";
 var im_another_variable = "here is my value";
+var x;
+var x2;
+var _;
 var iAmNil;
 
 var breakfast = "bagels";
