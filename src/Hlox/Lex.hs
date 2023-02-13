@@ -79,10 +79,10 @@ signed :: (Num a) => Parser a -> Parser a
 signed = L.signed spaceConsumer
 
 int :: Parser Number
-int = Hlox.Lex.Int <$> signed (lexeme L.decimal)
+int = Hlox.Lex.Int <$> lexeme L.decimal
 
 float :: Parser Number
-float = Float <$> signed (lexeme L.float)
+float = Float <$> lexeme L.float
 
 numberLiteral :: Parser Token
 numberLiteral = Number <$> (try float <|> int)
@@ -99,6 +99,45 @@ false = lexeme (string "false") $> Hlox.Lex.False
 nil :: Parser Token
 nil = lexeme (string "nil") $> Nil
 
+plus :: Parser Token
+plus = symbol "+" $> Plus
+
+minus :: Parser Token
+minus = symbol "-" $> Minus
+
+star :: Parser Token
+star = symbol "*" $> Star
+
+slash :: Parser Token
+slash = symbol "/" $> Slash
+
+less :: Parser Token
+less = symbol "<" $> Less
+
+lessEqual :: Parser Token
+lessEqual = symbol "<=" $> LessEqual
+
+greater :: Parser Token
+greater = symbol ">" $> Greater
+
+greaterEqual :: Parser Token
+greaterEqual = symbol ">=" $> GreaterEqual
+
+equalEqual :: Parser Token
+equalEqual = symbol "==" $> EqualEqual
+
+bangEqual :: Parser Token
+bangEqual = symbol "!=" $> BangEqual
+
+bang :: Parser Token
+bang = symbol "!" $> Bang
+
+and :: Parser Token
+and = lexeme (string "and") $> And
+
+or :: Parser Token
+or = lexeme (string "or") $> Or
+
 token :: Parser Token
 token =
   choice
@@ -106,6 +145,19 @@ token =
       stringLiteral,
       numberLiteral,
       semicolon,
+      plus,
+      minus,
+      star,
+      slash,
+      lessEqual,
+      less,
+      greaterEqual,
+      greater,
+      equalEqual,
+      bangEqual,
+      bang,
+      Hlox.Lex.and,
+      Hlox.Lex.or,
       true,
       false,
       nil
