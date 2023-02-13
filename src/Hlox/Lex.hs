@@ -6,8 +6,15 @@ import Control.Applicative (Alternative (some), (<|>))
 import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (MonadParsec (eof), Parsec, choice, many, manyTill, try)
-import Text.Megaparsec.Char (char, letterChar, space1, string)
+import Text.Megaparsec
+  ( MonadParsec (eof, notFollowedBy),
+    Parsec,
+    choice,
+    many,
+    manyTill,
+    try,
+  )
+import Text.Megaparsec.Char (alphaNumChar, char, letterChar, space1, string)
 import qualified Text.Megaparsec.Char.Lexer as L
 import Prelude hiding (print)
 
@@ -69,8 +76,11 @@ data Token
   | While
   deriving (Show, Eq)
 
+keyword :: Text -> Parser Text
+keyword s = string s <* notFollowedBy alphaNumChar
+
 print :: Parser Token
-print = lexeme (string "print") $> Print
+print = lexeme (keyword "print") $> Print
 
 stringLiteral :: Parser Token
 stringLiteral = String <$> lexeme (char '\"' *> manyTill L.charLiteral (char '\"'))
@@ -91,13 +101,13 @@ semicolon :: Parser Token
 semicolon = symbol ";" $> Semicolon
 
 true :: Parser Token
-true = lexeme (string "true") $> Hlox.Lex.True
+true = lexeme (keyword "true") $> Hlox.Lex.True
 
 false :: Parser Token
-false = lexeme (string "false") $> Hlox.Lex.False
+false = lexeme (keyword "false") $> Hlox.Lex.False
 
 nil :: Parser Token
-nil = lexeme (string "nil") $> Nil
+nil = lexeme (keyword "nil") $> Nil
 
 plus :: Parser Token
 plus = symbol "+" $> Plus
@@ -133,13 +143,13 @@ bang :: Parser Token
 bang = symbol "!" $> Bang
 
 and :: Parser Token
-and = lexeme (string "and") $> And
+and = lexeme (keyword "and") $> And
 
 or :: Parser Token
-or = lexeme (string "or") $> Or
+or = lexeme (keyword "or") $> Or
 
 var :: Parser Token
-var = lexeme (string "var") $> Var
+var = lexeme (keyword "var") $> Var
 
 identifier :: Parser Token
 identifier = Identifier <$> lexeme (some (letterChar <|> char '_'))
@@ -148,16 +158,16 @@ equal :: Parser Token
 equal = symbol "=" $> Equal
 
 if_ :: Parser Token
-if_ = lexeme (string "if") $> If
+if_ = lexeme (keyword "if") $> If
 
 else_ :: Parser Token
-else_ = lexeme (string "else") $> Else
+else_ = lexeme (keyword "else") $> Else
 
 while :: Parser Token
-while = lexeme (string "while") $> While
+while = lexeme (keyword "while") $> While
 
 for :: Parser Token
-for = lexeme (string "for") $> For
+for = lexeme (keyword "for") $> For
 
 leftParen :: Parser Token
 leftParen = symbol "(" $> LeftParen
@@ -174,7 +184,7 @@ rightBrace = symbol "}" $> RightBrace
 token :: Parser Token
 token =
   choice
-    [ print,
+    [ try print,
       stringLiteral,
       numberLiteral,
       semicolon,
@@ -190,16 +200,16 @@ token =
       equal,
       bangEqual,
       bang,
-      Hlox.Lex.and,
-      Hlox.Lex.or,
-      var,
-      true,
-      false,
-      nil,
-      if_,
-      else_,
-      while,
-      for,
+      try Hlox.Lex.and,
+      try Hlox.Lex.or,
+      try var,
+      try true,
+      try false,
+      try nil,
+      try if_,
+      try else_,
+      try while,
+      try for,
       leftParen,
       rightParen,
       leftBrace,

@@ -6,3 +6,20 @@ var breakfast = "bagels";
 print breakfast; // "bagels".
 breakfast = "beignets";
 print breakfast; // "beignets".
+
+var andVar;
+var classVar;
+var elseVar;
+var falseVar;
+var funVar;
+var forVar;
+var ifVar;
+var nilVar;
+var orVar;
+var printVar;
+var returnVar;
+var superVar;
+var thisVar;
+var trueVar;
+var varVar;
+var whileVar;
