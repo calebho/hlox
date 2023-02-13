@@ -419,3 +419,51 @@ spec =
       let result = ParseResult $ runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
+
+    it "lexes functions.lox" $ do
+      let src = $(makeRelativeToProject "test/data/functions.lox" >>= embedStringFile) :: T.Text
+      let expected =
+            [ Identifier "makeBreakfast",
+              LeftParen,
+              Identifier "bacon",
+              Comma,
+              Identifier "eggs",
+              Comma,
+              Identifier "toast",
+              RightParen,
+              Semicolon,
+              --
+              Fun,
+              Identifier "printSum",
+              LeftParen,
+              Identifier "a",
+              Comma,
+              Identifier "b",
+              RightParen,
+              LeftBrace,
+              Print,
+              Identifier "a",
+              Plus,
+              Identifier "b",
+              Semicolon,
+              RightBrace,
+              --
+              Fun,
+              Identifier "returnSum",
+              LeftParen,
+              Identifier "a",
+              Comma,
+              Identifier "b",
+              RightParen,
+              LeftBrace,
+              Return,
+              Identifier "a",
+              Plus,
+              Identifier "b",
+              Semicolon,
+              RightBrace
+            ]
+
+      let result = ParseResult $ runParser tokens "" src
+
+      result `shouldBe` ParseResult (Right expected)
