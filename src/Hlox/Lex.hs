@@ -181,6 +181,15 @@ leftBrace = symbol "{" $> LeftBrace
 rightBrace :: Parser Token
 rightBrace = symbol "}" $> RightBrace
 
+fun :: Parser Token
+fun = lexeme (keyword "fun") $> Fun
+
+return :: Parser Token
+return = lexeme (keyword "return") $> Return
+
+comma :: Parser Token
+comma = symbol "," $> Comma
+
 token :: Parser Token
 token =
   choice
@@ -214,6 +223,9 @@ token =
       rightParen,
       leftBrace,
       rightBrace,
+      try fun,
+      try Hlox.Lex.return,
+      comma,
       identifier
     ]
 
