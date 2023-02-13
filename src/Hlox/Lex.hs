@@ -2,7 +2,7 @@
 
 module Hlox.Lex (Token (..), Number (..), tokens) where
 
-import Control.Applicative (Alternative (some), (<|>))
+import Control.Applicative ((<|>))
 import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
@@ -152,7 +152,9 @@ var :: Parser Token
 var = lexeme (keyword "var") $> Var
 
 identifier :: Parser Token
-identifier = Identifier <$> lexeme (some (letterChar <|> char '_'))
+identifier =
+  Identifier
+    <$> lexeme ((:) <$> (letterChar <|> char '_') <*> many (alphaNumChar <|> char '_'))
 
 equal :: Parser Token
 equal = symbol "=" $> Equal
