@@ -300,3 +300,73 @@ spec =
       let result = ParseResult $ runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
+
+    it "lexes control_flow.lox" $ do
+      let src = $(makeRelativeToProject "test/data/control_flow.lox" >>= embedStringFile) :: T.Text
+      let expected =
+            [ If,
+              LeftParen,
+              Identifier "condition",
+              RightParen,
+              LeftBrace,
+              Print,
+              String "yes",
+              Semicolon,
+              RightBrace,
+              Else,
+              LeftBrace,
+              Print,
+              String "no",
+              Semicolon,
+              RightBrace,
+              --
+              Var,
+              Identifier "a",
+              Equal,
+              Number (Hlox.Lex.Int 1),
+              Semicolon,
+              While,
+              LeftParen,
+              Identifier "a",
+              Less,
+              Number (Hlox.Lex.Int 10),
+              RightParen,
+              LeftBrace,
+              Print,
+              Identifier "a",
+              Semicolon,
+              Identifier "a",
+              Equal,
+              Identifier "a",
+              Plus,
+              Number (Hlox.Lex.Int 1),
+              Semicolon,
+              RightBrace,
+              --
+              For,
+              LeftParen,
+              Var,
+              Identifier "a",
+              Equal,
+              Number (Hlox.Lex.Int 1),
+              Semicolon,
+              Identifier "a",
+              Less,
+              Number (Hlox.Lex.Int 10),
+              Semicolon,
+              Identifier "a",
+              Equal,
+              Identifier "a",
+              Plus,
+              Number (Hlox.Lex.Int 1),
+              RightParen,
+              LeftBrace,
+              Print,
+              Identifier "a",
+              Semicolon,
+              RightBrace
+            ]
+
+      let result = ParseResult $ runParser tokens "" src
+
+      result `shouldBe` ParseResult (Right expected)

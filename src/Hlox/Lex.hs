@@ -147,6 +147,30 @@ identifier = Identifier <$> lexeme (some (letterChar <|> char '_'))
 equal :: Parser Token
 equal = symbol "=" $> Equal
 
+if_ :: Parser Token
+if_ = lexeme (string "if") $> If
+
+else_ :: Parser Token
+else_ = lexeme (string "else") $> Else
+
+while :: Parser Token
+while = lexeme (string "while") $> While
+
+for :: Parser Token
+for = lexeme (string "for") $> For
+
+leftParen :: Parser Token
+leftParen = symbol "(" $> LeftParen
+
+rightParen :: Parser Token
+rightParen = symbol ")" $> RightParen
+
+leftBrace :: Parser Token
+leftBrace = symbol "{" $> LeftBrace
+
+rightBrace :: Parser Token
+rightBrace = symbol "}" $> RightBrace
+
 token :: Parser Token
 token =
   choice
@@ -172,6 +196,14 @@ token =
       true,
       false,
       nil,
+      if_,
+      else_,
+      while,
+      for,
+      leftParen,
+      rightParen,
+      leftBrace,
+      rightBrace,
       identifier
     ]
 
