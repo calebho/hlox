@@ -190,6 +190,18 @@ return = lexeme (keyword "return") $> Return
 comma :: Parser Token
 comma = symbol "," $> Comma
 
+class_ :: Parser Token
+class_ = lexeme (keyword "class") $> Class
+
+super :: Parser Token
+super = lexeme (keyword "super") $> Super
+
+this :: Parser Token
+this = lexeme (keyword "this") $> This
+
+dot :: Parser Token
+dot = symbol "." $> Dot
+
 token :: Parser Token
 token =
   choice
@@ -209,6 +221,7 @@ token =
       equal,
       bangEqual,
       bang,
+      dot,
       try Hlox.Lex.and,
       try Hlox.Lex.or,
       try var,
@@ -219,6 +232,9 @@ token =
       try else_,
       try while,
       try for,
+      try class_,
+      try super,
+      try this,
       leftParen,
       rightParen,
       leftBrace,
