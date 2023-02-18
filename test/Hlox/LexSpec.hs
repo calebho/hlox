@@ -352,6 +352,10 @@ spec =
               Semicolon,
               Var,
               Identifier "whileVar",
+              Semicolon,
+              --
+              Var,
+              Identifier "and_var",
               Semicolon
             ]
 
