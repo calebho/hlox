@@ -26,3 +26,5 @@ var thisVar;
 var trueVar;
 var varVar;
 var whileVar;
+
+var and_var;

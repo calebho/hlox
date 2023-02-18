@@ -77,7 +77,7 @@ data Token
   deriving (Show, Eq)
 
 keyword :: Text -> Parser Text
-keyword s = string s <* notFollowedBy alphaNumChar
+keyword s = string s <* notFollowedBy (alphaNumChar <|> char '_')
 
 print :: Parser Token
 print = lexeme (keyword "print") $> Print
