@@ -3,11 +3,12 @@
 module Hlox.LexSpec (spec) where
 
 import qualified Data.ByteString as BS
+import Data.Either (isLeft)
 import Data.FileEmbed (embedStringFile, makeRelativeToProject)
 import qualified Data.Text as T
 import Data.Void (Void)
 import Hlox.Lex (Number (..), Token (..), tokens)
-import Test.Hspec (Spec, describe, it, pending, shouldBe)
+import Test.Hspec (Spec, describe, it, pending, shouldBe, shouldSatisfy)
 import Text.Megaparsec (ParseErrorBundle, errorBundlePretty, runParser)
 
 newtype ParseResult = ParseResult (Either (ParseErrorBundle T.Text Void) [Token]) deriving (Eq)
@@ -571,3 +572,31 @@ spec =
       let result = ParseResult $ runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
+
+    it "does not lex bad_symbol.lox" $ do
+      let src = $(makeRelativeToProject "test/data/bad_symbol.lox" >>= embedStringFile) :: T.Text
+
+      let result = runParser tokens "" src
+
+      result `shouldSatisfy` isLeft
+
+    it "does not lex bad_unclosed_string.lox" $ do
+      let src = $(makeRelativeToProject "test/data/bad_unclosed_string.lox" >>= embedStringFile) :: T.Text
+
+      let result = runParser tokens "" src
+
+      result `shouldSatisfy` isLeft
+
+    it "does not lex bad_identifier.lox" $ do
+      let src = $(makeRelativeToProject "test/data/bad_identifier.lox" >>= embedStringFile) :: T.Text
+
+      let result = runParser tokens "" src
+
+      result `shouldSatisfy` isLeft
+
+    it "does not lex bad_identifier_2.lox" $ do
+      let src = $(makeRelativeToProject "test/data/bad_identifier_2.lox" >>= embedStringFile) :: T.Text
+
+      let result = runParser tokens "" src
+
+      result `shouldSatisfy` isLeft

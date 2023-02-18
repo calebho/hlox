@@ -75,9 +75,12 @@ data Token
   | Var
   | While
   deriving (Show, Eq)
+  
+identifierChar :: Parser Char
+identifierChar = alphaNumChar <|> char '_'
 
 keyword :: Text -> Parser Text
-keyword s = string s <* notFollowedBy (alphaNumChar <|> char '_')
+keyword s = string s <* notFollowedBy identifierChar
 
 print :: Parser Token
 print = lexeme (keyword "print") $> Print
@@ -89,10 +92,10 @@ signed :: (Num a) => Parser a -> Parser a
 signed = L.signed spaceConsumer
 
 int :: Parser Number
-int = Hlox.Lex.Int <$> lexeme L.decimal
+int = Hlox.Lex.Int <$> lexeme L.decimal <* notFollowedBy identifierChar
 
 float :: Parser Number
-float = Float <$> lexeme L.float
+float = Float <$> lexeme L.float <* notFollowedBy identifierChar
 
 numberLiteral :: Parser Token
 numberLiteral = Number <$> (try float <|> int)
@@ -154,7 +157,7 @@ var = lexeme (keyword "var") $> Var
 identifier :: Parser Token
 identifier =
   Identifier
-    <$> lexeme ((:) <$> (letterChar <|> char '_') <*> many (alphaNumChar <|> char '_'))
+    <$> lexeme ((:) <$> (letterChar <|> char '_') <*> many identifierChar)
 
 equal :: Parser Token
 equal = symbol "=" $> Equal
