@@ -1,18 +1,27 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
-module Hlox.Lex (Token (..), Number (..), tokens) where
+module Hlox.Lex (Token (..), Number (..), tokens, WithPos (..)) where
 
 import Control.Applicative ((<|>))
 import Data.Functor (($>))
+import Data.String.Interpolate (i)
 import Data.Text (Text)
+import qualified Data.Text as Txt
 import Data.Void (Void)
 import Text.Megaparsec
-  ( MonadParsec (eof, notFollowedBy),
+  ( MonadParsec (eof, getParserState, notFollowedBy),
     Parsec,
+    PosState (pstateSourcePos),
+    SourcePos (sourceColumn),
+    State (statePosState),
     choice,
     many,
     manyTill,
     try,
+    unPos,
   )
 import Text.Megaparsec.Char (alphaNumChar, char, letterChar, space1, string)
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -26,13 +35,21 @@ spaceConsumer = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*"
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme spaceConsumer
 
-symbol :: Text -> Parser Text
-symbol = L.symbol spaceConsumer
+symbol :: Text -> Parser (WithPos Text)
+symbol s =
+  withPos $ \startPos -> do
+    L.symbol spaceConsumer s
+    return WithPos {startPos, tokenLength = Txt.length s, tokenVal = s}
 
 data Number
   = Int Int
   | Float Float
-  deriving (Show, Eq)
+  deriving (Eq, Ord)
+
+instance Show Number where
+  show = \case
+    Int n -> show n
+    Float f -> show f
 
 data Token
   = LeftParen
@@ -74,140 +91,231 @@ data Token
   | True
   | Var
   | While
-  deriving (Show, Eq)
-  
+  deriving (Eq, Ord)
+
+instance Show Token where
+  show = \case
+    LeftParen -> "("
+    RightParen -> ")"
+    LeftBrace -> "{"
+    RightBrace -> "}"
+    Comma -> ","
+    Dot -> "."
+    Minus -> "-"
+    Plus -> "+"
+    Semicolon -> ";"
+    Slash -> "/"
+    Star -> "*"
+    Bang -> "!"
+    BangEqual -> "!="
+    Equal -> "="
+    EqualEqual -> "=="
+    Greater -> ">"
+    GreaterEqual -> ">="
+    Less -> "<"
+    LessEqual -> "<="
+    Identifier s -> show s
+    String s -> [i|"#{s}"|]
+    Number n -> show n
+    And -> "and"
+    Class -> "class"
+    Else -> "else"
+    Hlox.Lex.False -> "false"
+    Fun -> "fun"
+    For -> "for"
+    If -> "if"
+    Nil -> "nil"
+    Or -> "or"
+    Print -> "print"
+    Return -> "return"
+    Super -> "super"
+    This -> "this"
+    Hlox.Lex.True -> "true"
+    Var -> "var"
+    While -> "while"
+
+data WithPos a = WithPos
+  { startPos :: SourcePos,
+    -- endPos :: SourcePos,
+    tokenLength :: Int,
+    tokenVal :: a
+  }
+  deriving (Eq, Show, Ord)
+
+instance Functor WithPos where
+  fmap f x@WithPos {tokenVal} = x {tokenVal = f tokenVal}
+
+getSourcePos :: MonadParsec e s m => m SourcePos
+getSourcePos = pstateSourcePos . statePosState <$> getParserState
+
+withPos :: MonadParsec e s m => (SourcePos -> m a) -> m a
+withPos f = getSourcePos >>= f
+
+getCol :: SourcePos -> Int
+getCol = unPos . sourceColumn
+
 identifierChar :: Parser Char
 identifierChar = alphaNumChar <|> char '_'
 
-keyword :: Text -> Parser Text
-keyword s = string s <* notFollowedBy identifierChar
+keyword :: Text -> Parser (WithPos Text)
+keyword k =
+  withPos $ \startPos -> do
+    string k <* notFollowedBy identifierChar
+    return WithPos {startPos, tokenLength = Txt.length k, tokenVal = k}
 
-print :: Parser Token
-print = lexeme (keyword "print") $> Print
+print :: Parser (WithPos Token)
+print = ($> Print) <$> lexeme (keyword "print")
 
-stringLiteral :: Parser Token
-stringLiteral = String <$> lexeme (char '\"' *> manyTill L.charLiteral (char '\"'))
+stringLiteral :: Parser (WithPos Token)
+stringLiteral =
+  withPos $ \startPos -> do
+    s <- lexeme (char '\"' *> manyTill L.charLiteral (char '\"'))
+    return WithPos {startPos, tokenLength = length s, tokenVal = String s}
 
-signed :: (Num a) => Parser a -> Parser a
-signed = L.signed spaceConsumer
+int :: Parser (WithPos Number)
+int =
+  withPos $ \startPos -> do
+    n <- lexeme L.decimal <* notFollowedBy identifierChar
+    endPos <- getSourcePos
+    return
+      WithPos
+        { startPos,
+          tokenLength = getCol endPos - getCol startPos,
+          tokenVal = Hlox.Lex.Int n
+        }
 
-int :: Parser Number
-int = Hlox.Lex.Int <$> lexeme L.decimal <* notFollowedBy identifierChar
+float :: Parser (WithPos Number)
+float =
+  withPos $ \startPos -> do
+    x <- lexeme L.float <* notFollowedBy identifierChar
+    endPos <- getSourcePos
+    return
+      WithPos
+        { startPos,
+          tokenLength = getCol endPos - getCol startPos,
+          tokenVal = Float x
+        }
 
-float :: Parser Number
-float = Float <$> lexeme L.float <* notFollowedBy identifierChar
+numberLiteral :: Parser (WithPos Token)
+numberLiteral = do
+  n <- try float <|> int
+  return (Number <$> n)
 
-numberLiteral :: Parser Token
-numberLiteral = Number <$> (try float <|> int)
+semicolon :: Parser (WithPos Token)
+semicolon = fmap ($> Semicolon) (symbol ";")
 
-semicolon :: Parser Token
-semicolon = symbol ";" $> Semicolon
+true :: Parser (WithPos Token)
+true = ($> Hlox.Lex.True) <$> lexeme (keyword "true")
 
-true :: Parser Token
-true = lexeme (keyword "true") $> Hlox.Lex.True
+false :: Parser (WithPos Token)
+false = ($> Hlox.Lex.False) <$> lexeme (keyword "false")
 
-false :: Parser Token
-false = lexeme (keyword "false") $> Hlox.Lex.False
+nil :: Parser (WithPos Token)
+nil = ($> Nil) <$> lexeme (keyword "nil")
 
-nil :: Parser Token
-nil = lexeme (keyword "nil") $> Nil
+plus :: Parser (WithPos Token)
+plus = ($> Plus) <$> symbol "+"
 
-plus :: Parser Token
-plus = symbol "+" $> Plus
+minus :: Parser (WithPos Token)
+minus = ($> Minus) <$> symbol "-"
 
-minus :: Parser Token
-minus = symbol "-" $> Minus
+star :: Parser (WithPos Token)
+star = ($> Star) <$> symbol "*"
 
-star :: Parser Token
-star = symbol "*" $> Star
+slash :: Parser (WithPos Token)
+slash = ($> Slash) <$> symbol "/"
 
-slash :: Parser Token
-slash = symbol "/" $> Slash
+less :: Parser (WithPos Token)
+less = ($> Less) <$> symbol "<"
 
-less :: Parser Token
-less = symbol "<" $> Less
+lessEqual :: Parser (WithPos Token)
+lessEqual = ($> LessEqual) <$> symbol "<="
 
-lessEqual :: Parser Token
-lessEqual = symbol "<=" $> LessEqual
+greater :: Parser (WithPos Token)
+greater = ($> Greater) <$> symbol ">"
 
-greater :: Parser Token
-greater = symbol ">" $> Greater
+greaterEqual :: Parser (WithPos Token)
+greaterEqual = ($> GreaterEqual) <$> symbol ">="
 
-greaterEqual :: Parser Token
-greaterEqual = symbol ">=" $> GreaterEqual
+equalEqual :: Parser (WithPos Token)
+equalEqual = ($> EqualEqual) <$> symbol "=="
 
-equalEqual :: Parser Token
-equalEqual = symbol "==" $> EqualEqual
+bangEqual :: Parser (WithPos Token)
+bangEqual = ($> BangEqual) <$> symbol "!="
 
-bangEqual :: Parser Token
-bangEqual = symbol "!=" $> BangEqual
+bang :: Parser (WithPos Token)
+bang = ($> Bang) <$> symbol "!"
 
-bang :: Parser Token
-bang = symbol "!" $> Bang
+and :: Parser (WithPos Token)
+and = ($> And) <$> lexeme (keyword "and")
 
-and :: Parser Token
-and = lexeme (keyword "and") $> And
+or :: Parser (WithPos Token)
+or = ($> Or) <$> lexeme (keyword "or")
 
-or :: Parser Token
-or = lexeme (keyword "or") $> Or
+var :: Parser (WithPos Token)
+var = ($> Var) <$> lexeme (keyword "var")
 
-var :: Parser Token
-var = lexeme (keyword "var") $> Var
-
-identifier :: Parser Token
+identifier :: Parser (WithPos Token)
 identifier =
-  Identifier
-    <$> lexeme ((:) <$> (letterChar <|> char '_') <*> many identifierChar)
+  withPos $ \startPos -> do
+    id <- lexeme ((:) <$> (letterChar <|> char '_') <*> many identifierChar)
+    endPos <- getSourcePos
+    return
+      WithPos
+        { startPos,
+          tokenLength = getCol endPos - getCol startPos,
+          tokenVal = Identifier id
+        }
 
-equal :: Parser Token
-equal = symbol "=" $> Equal
+equal :: Parser (WithPos Token)
+equal = ($> Equal) <$> symbol "="
 
-if_ :: Parser Token
-if_ = lexeme (keyword "if") $> If
+if_ :: Parser (WithPos Token)
+if_ = ($> If) <$> lexeme (keyword "if")
 
-else_ :: Parser Token
-else_ = lexeme (keyword "else") $> Else
+else_ :: Parser (WithPos Token)
+else_ = ($> Else) <$> lexeme (keyword "else")
 
-while :: Parser Token
-while = lexeme (keyword "while") $> While
+while :: Parser (WithPos Token)
+while = ($> While) <$> lexeme (keyword "while")
 
-for :: Parser Token
-for = lexeme (keyword "for") $> For
+for :: Parser (WithPos Token)
+for = ($> For) <$> lexeme (keyword "for")
 
-leftParen :: Parser Token
-leftParen = symbol "(" $> LeftParen
+leftParen :: Parser (WithPos Token)
+leftParen = ($> LeftParen) <$> symbol "("
 
-rightParen :: Parser Token
-rightParen = symbol ")" $> RightParen
+rightParen :: Parser (WithPos Token)
+rightParen = ($> RightParen) <$> symbol ")"
 
-leftBrace :: Parser Token
-leftBrace = symbol "{" $> LeftBrace
+leftBrace :: Parser (WithPos Token)
+leftBrace = ($> LeftBrace) <$> symbol "{"
 
-rightBrace :: Parser Token
-rightBrace = symbol "}" $> RightBrace
+rightBrace :: Parser (WithPos Token)
+rightBrace = ($> RightBrace) <$> symbol "}"
 
-fun :: Parser Token
-fun = lexeme (keyword "fun") $> Fun
+fun :: Parser (WithPos Token)
+fun = ($> Fun) <$> lexeme (keyword "fun")
 
-return :: Parser Token
-return = lexeme (keyword "return") $> Return
+return_ :: Parser (WithPos Token)
+return_ = ($> Return) <$> lexeme (keyword "return")
 
-comma :: Parser Token
-comma = symbol "," $> Comma
+comma :: Parser (WithPos Token)
+comma = ($> Comma) <$> symbol ","
 
-class_ :: Parser Token
-class_ = lexeme (keyword "class") $> Class
+class_ :: Parser (WithPos Token)
+class_ = ($> Class) <$> lexeme (keyword "class")
 
-super :: Parser Token
-super = lexeme (keyword "super") $> Super
+super :: Parser (WithPos Token)
+super = ($> Super) <$> lexeme (keyword "super")
 
-this :: Parser Token
-this = lexeme (keyword "this") $> This
+this :: Parser (WithPos Token)
+this = ($> This) <$> lexeme (keyword "this")
 
-dot :: Parser Token
-dot = symbol "." $> Dot
+dot :: Parser (WithPos Token)
+dot = ($> Dot) <$> symbol "."
 
-token :: Parser Token
+token :: Parser (WithPos Token)
 token =
   choice
     [ try print,
@@ -245,10 +353,10 @@ token =
       leftBrace,
       rightBrace,
       try fun,
-      try Hlox.Lex.return,
+      try return_,
       comma,
       identifier
     ]
 
-tokens :: Parser [Token]
+tokens :: Parser [WithPos Token]
 tokens = spaceConsumer *> manyTill token eof

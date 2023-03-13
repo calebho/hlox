@@ -18,10 +18,12 @@ library
     hs-source-dirs: src
     exposed-modules:
         Hlox.Lex
+        Hlox.Parse
     build-depends:
         base ^>=4.16.4.0,
         megaparsec ^>=9.3.0,
-        text 
+        text,
+        string-interpolate
     default-language: Haskell2010
 
 executable hlox
@@ -41,6 +43,7 @@ test-suite test-hlox
     main-is: Spec.hs
     other-modules:
         Hlox.LexSpec
+        Hlox.ParseSpec
     build-depends:
         hlox,
         base ^>=4.16.4.0,
