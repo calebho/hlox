@@ -7,8 +7,8 @@ import Data.Either (isLeft)
 import Data.FileEmbed (embedStringFile, makeRelativeToProject)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Hlox.Lex (Number (..), Token (..), tokens)
-import Test.Hspec (Spec, describe, it, pending, shouldBe, shouldSatisfy)
+import Hlox.Lex (Number (..), Token (..), WithPos (..), tokens)
+import Test.Hspec
 import Text.Megaparsec (ParseErrorBundle, errorBundlePretty, runParser)
 
 newtype ParseResult = ParseResult (Either (ParseErrorBundle T.Text Void) [Token]) deriving (Eq)
@@ -24,7 +24,7 @@ spec =
       let src = $(makeRelativeToProject "test/data/hello.lox" >>= embedStringFile) :: T.Text
       let expected = [Print, String "Hello, world!", Semicolon]
 
-      let result = runParser tokens "" src
+      let result = fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` Right expected
 
@@ -49,7 +49,7 @@ spec =
               Semicolon
             ]
 
-      let result = ParseResult $ runParser tokens "" src
+      let result = ParseResult $ fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
 
@@ -260,7 +260,7 @@ spec =
               Semicolon
             ]
 
-      let result = ParseResult $ runParser tokens "" src
+      let result = ParseResult $ fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
 
@@ -360,7 +360,7 @@ spec =
               Semicolon
             ]
 
-      let result = ParseResult $ runParser tokens "" src
+      let result = ParseResult $ fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
 
@@ -430,7 +430,7 @@ spec =
               RightBrace
             ]
 
-      let result = ParseResult $ runParser tokens "" src
+      let result = ParseResult $ fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
 
@@ -478,7 +478,7 @@ spec =
               RightBrace
             ]
 
-      let result = ParseResult $ runParser tokens "" src
+      let result = ParseResult $ fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
 
@@ -569,7 +569,7 @@ spec =
               RightBrace
             ]
 
-      let result = ParseResult $ runParser tokens "" src
+      let result = ParseResult $ fmap tokenVal <$> runParser tokens "" src
 
       result `shouldBe` ParseResult (Right expected)
 
